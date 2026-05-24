@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a179d9eee7da1bd4184c387a9949ec3e, type: 3}
+  m_Name: DefaultSimulationConfig
+  m_EditorClassIdentifier: Assembly-CSharp::SimulationConfig
+  buildings:
+  - name: Edificio 1
+    spawnPoints:
+    - transform: {fileID: 0}
+      weight: 100
+    - transform: {fileID: 0}
+      weight: 100
+    - transform: {fileID: 0}
+      weight: 100
+    rooms:
+    - name: Salon_A
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -32
+    - name: Salon_B
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -31
+    - name: Salon_C
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -22
+    - name: Salon_D
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -30
+    - name: Salon_1
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -24
+    - name: Salon_2
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -23
+    - name: Salon_3
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -20
+    - name: Salon_4
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -26
+    - name: Salon_5
+      transform: {fileID: 0}
+      capacity: 25
+      currentOccupancy: -20
+    - name: Salon 9
+      transform: {fileID: 0}
+      capacity: 27
+      currentOccupancy: 0
+  minStayTime: 1
+  maxStayTime: 30
+  returnToSpawnChance: 0.5
+  populationData: 26000000260000002600000026000000260000002600000010000000100000001000000010000000100000000f0000000f0000000f0000000f0000000f0000000700000006000000070000000600000007000000
