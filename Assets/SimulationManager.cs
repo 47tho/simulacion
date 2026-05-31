@@ -1,55 +1,94 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[System.Serializable]
+public class SpawnPointData
+{
+    public Transform transform;
+    [Range(0, 100)]
+    public float weight = 100f;
+}
+
+[System.Serializable]
+public class RoomData
+{
+    public string name;
+    public Transform transform;
+    public int capacity = 20;
+    [System.NonSerialized]
+    public int currentOccupancy = 0;
+}
+
+[System.Serializable]
+public class BuildingData
+{
+    public string name = "Building";
+    public List<SpawnPointData> spawnPoints = new List<SpawnPointData>();
+    public List<RoomData> rooms = new List<RoomData>();
+    public List<int> populationData = new List<int> { 20, 40, 60, 80, 100 };
+}
+
 public class SimulationManager : MonoBehaviour
 {
     public GameObject personPrefab;
-    public SimulationConfig config;
+    
+    [Header("Building Configurations")]
+    public List<BuildingData> buildings = new List<BuildingData>();
+
+    [Header("Behavior Settings")]
+    public float minStayTime = 10f;
+    public float maxStayTime = 30f;
+    public float returnToSpawnChance = 0.5f;
     
     [Header("Simulation Speed")]
-    public float secondsPerMinute = 5f;
+    public float secondsPerMinute = 10f;
     
     private int currentMinute = 0;
     private float timer = 0f;
-    private List<GameObject> activePeople = new List<GameObject>();
+    private Dictionary<BuildingData, List<GameObject>> buildingPopulations = new Dictionary<BuildingData, List<GameObject>>();
 
     void Start()
     {
-        if (config == null)
+        foreach (var building in buildings)
         {
-            Debug.LogError("No se ha asignado una configuracion al SimulationManager.");
-            return;
+            buildingPopulations[building] = new List<GameObject>();
+            // Reset occupancy
+            foreach(var room in building.rooms) room.currentOccupancy = 0;
         }
-        UpdatePopulation();
+        UpdateAllPopulations();
     }
 
     void Update()
     {
-        if (config == null) return;
-
         timer += Time.deltaTime;
         if (timer >= secondsPerMinute)
         {
             timer = 0f;
             currentMinute++;
-            // If we run out of data, stay at the last minute's population
-            if (currentMinute >= config.populationData.Count)
-            {
-                currentMinute = config.populationData.Count - 1;
-            }
-            UpdatePopulation();
+            UpdateAllPopulations();
         }
     }
 
-    void UpdatePopulation()
+    void UpdateAllPopulations()
     {
-        if (config == null || config.populationData.Count == 0) return;
+        foreach (var building in buildings)
+        {
+            UpdateBuildingPopulation(building);
+        }
+    }
 
-        // Clean up null references
+    void UpdateBuildingPopulation(BuildingData building)
+    {
+        if (building.populationData.Count == 0) return;
+
+        if (!buildingPopulations.ContainsKey(building))
+            buildingPopulations[building] = new List<GameObject>();
+
+        List<GameObject> activePeople = buildingPopulations[building];
         activePeople.RemoveAll(p => p == null);
 
-        int targetIndex = Mathf.Clamp(currentMinute, 0, config.populationData.Count - 1);
-        int targetCount = config.populationData[targetIndex];
+        int targetIndex = Mathf.Clamp(currentMinute, 0, building.populationData.Count - 1);
+        int targetCount = building.populationData[targetIndex];
         int currentCount = activePeople.Count;
 
         if (currentCount < targetCount)
@@ -57,7 +96,7 @@ public class SimulationManager : MonoBehaviour
             int toSpawn = targetCount - currentCount;
             for (int i = 0; i < toSpawn; i++)
             {
-                SpawnPerson();
+                SpawnPerson(building, activePeople);
             }
         }
         else if (currentCount > targetCount)
@@ -73,33 +112,15 @@ public class SimulationManager : MonoBehaviour
                 }
             }
         }
-        
-        Debug.Log($"Sim Time: {6:30 + currentMinute}m - Population: {activePeople.Count} / Target: {targetCount}");
     }
 
-    void SpawnPerson()
+    void SpawnPerson(BuildingData building, List<GameObject> activeList)
     {
-        if (personPrefab == null || config == null || config.buildings.Count == 0) return;
-        
-        // Pick a random building
-        BuildingData building = config.buildings[Random.Range(0, config.buildings.Count)];
-        if (building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
+        if (personPrefab == null || building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
 
-        // Strictly pick a random room as requested
         RoomData targetRoom = building.rooms[Random.Range(0, building.rooms.Count)];
-        
-        // Check if room transform is null, try to find one that isn't
-        if (targetRoom.transform == null)
-        {
-            foreach(var r in building.rooms)
-            {
-                if (r.transform != null) { targetRoom = r; break; }
-            }
-        }
-        
         if (targetRoom.transform == null) return;
 
-        // Weighted random for spawn point
         float totalWeight = 0;
         foreach (var sp in building.spawnPoints) totalWeight += sp.weight;
         float randomValue = Random.Range(0, totalWeight);
@@ -132,9 +153,9 @@ public class SimulationManager : MonoBehaviour
         
         if (agent != null)
         {
-            agent.Initialize(targetRoom, selectedSpawn.transform, config.minStayTime, config.maxStayTime, config.returnToSpawnChance);
+            agent.Initialize(targetRoom, selectedSpawn.transform, minStayTime, maxStayTime, returnToSpawnChance);
         }
         
-        activePeople.Add(person);
+        activeList.Add(person);
     }
 }

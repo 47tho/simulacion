@@ -15,54 +15,57 @@ MonoBehaviour:
   buildings:
   - name: Edificio 1
     spawnPoints:
-    - transform: {fileID: 0}
+    - objectName: Spawn_Edificio 1_0
+      transform: {fileID: 0}
       weight: 100
-    - transform: {fileID: 0}
+    - objectName: Spawn_Edificio 1_1
+      transform: {fileID: 0}
       weight: 100
-    - transform: {fileID: 0}
+    - objectName: Spawn_Edificio 1_2
+      transform: {fileID: 0}
       weight: 100
     rooms:
     - name: Salon_A
+      objectName: Salon_A
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -32
     - name: Salon_B
+      objectName: Salon_B
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -31
     - name: Salon_C
+      objectName: Salon_C
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -22
     - name: Salon_D
+      objectName: Salon_D
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -30
     - name: Salon_1
+      objectName: Salon_1
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -24
     - name: Salon_2
+      objectName: Salon_2
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -23
     - name: Salon_3
+      objectName: Salon_3
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -20
     - name: Salon_4
+      objectName: Salon_4
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -26
     - name: Salon_5
+      objectName: Salon_5
       transform: {fileID: 0}
       capacity: 25
-      currentOccupancy: -20
     - name: Salon 9
+      objectName: 
       transform: {fileID: 0}
       capacity: 27
-      currentOccupancy: 0
+    populationData: 14000000190000001e0000002300000028000000
   minStayTime: 1
   maxStayTime: 30
   returnToSpawnChance: 0.5
-  populationData: 26000000260000002600000026000000260000002600000010000000100000001000000010000000100000000f0000000f0000000f0000000f0000000f0000000700000006000000070000000600000007000000
