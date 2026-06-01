@@ -8,7 +8,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private float jumpHeight = 1.2f;
     [SerializeField] private float gravity = -15f;
-    [SerializeField] private float jumpImpulseDelay = 0.35f; // Time for the "anticipation" animation
+    [SerializeField] private float jumpImpulseDelay = 1.2f; // Time for the "anticipation" animation
 
     private CharacterController controller;
     private Animator animator;
@@ -42,6 +42,9 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         isGrounded = controller.isGrounded;
+        
+        // If we are waiting for the jump impulse, we should stay "grounded" for animation purposes
+        bool animatorGrounded = isGrounded || isWaitingToJump;
         
         if (isGrounded)
         {
@@ -111,7 +114,9 @@ public class PlayerController : MonoBehaviour
         if (animator != null)
         {
             animator.SetFloat("Speed", moveInput.magnitude);
-            animator.SetBool("IsGrounded", isGrounded);
+            // We set IsGrounded to false as soon as we start waiting for the jump
+            // to prevent the animator from snapping back to Idle.
+            animator.SetBool("IsGrounded", isGrounded && !isWaitingToJump);
         }
     }
 }
