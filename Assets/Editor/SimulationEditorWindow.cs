@@ -150,16 +150,18 @@ public class SimulationEditorWindow : EditorWindow
         EditorGUILayout.Space();
         
         // Population per building
-        EditorGUILayout.LabelField("Datos de Población (personas por minuto)");
+        EditorGUILayout.LabelField("Datos de Población (personas por intervalo de 5 min)");
         for (int k = 0; k < building.populationData.Count; k++)
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"Min {k}", GUILayout.Width(50));
+            int startMin = k * 5;
+            int endMin = (k + 1) * 5;
+            EditorGUILayout.LabelField($"Mins {startMin}-{endMin}", GUILayout.Width(80));
             building.populationData[k] = EditorGUILayout.IntField(building.populationData[k]);
             if (GUILayout.Button("-", GUILayout.Width(20))) { building.populationData.RemoveAt(k); break; }
             EditorGUILayout.EndHorizontal();
         }
-        if (GUILayout.Button("+ Añadir Minuto")) building.populationData.Add(0);
+        if (GUILayout.Button("+ Añadir Intervalo (5 min)")) building.populationData.Add(0);
 
         EditorGUI.indentLevel--;
         EditorGUILayout.EndVertical();

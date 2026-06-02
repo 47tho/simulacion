@@ -87,8 +87,16 @@ public class SimulationManager : MonoBehaviour
         List<GameObject> activePeople = buildingPopulations[building];
         activePeople.RemoveAll(p => p == null);
 
-        int targetIndex = Mathf.Clamp(currentMinute, 0, building.populationData.Count - 1);
-        int targetCount = building.populationData[targetIndex];
+        int blockIndex = currentMinute / 5;
+        int minuteInBlock = currentMinute % 5;
+
+        int targetValue = building.populationData[Mathf.Clamp(blockIndex, 0, building.populationData.Count - 1)];
+        int prevValue = (blockIndex > 0) ? building.populationData[Mathf.Clamp(blockIndex - 1, 0, building.populationData.Count - 1)] : 0;
+
+        // Distribuir equitativamente: Rampa lineal entre el valor previo y el objetivo del bloque
+        float t = (minuteInBlock + 1) / 5.0f;
+        int targetCount = Mathf.RoundToInt(Mathf.Lerp(prevValue, targetValue, t));
+
         int currentCount = activePeople.Count;
 
         if (currentCount < targetCount)
