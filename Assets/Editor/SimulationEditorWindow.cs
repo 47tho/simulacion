@@ -33,9 +33,23 @@ public class SimulationEditorWindow : EditorWindow
         }
 
         EditorGUILayout.BeginVertical("box");
-        EditorGUILayout.LabelField("Configuración de Escena (Persistente)", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Prefabs de NPCs", EditorStyles.boldLabel);
+        manager.remyPrefab = (GameObject)EditorGUILayout.ObjectField("Remy (Normal 1)", manager.remyPrefab, typeof(GameObject), false);
+        manager.ch22Prefab = (GameObject)EditorGUILayout.ObjectField("Ch22 (Normal 2)", manager.ch22Prefab, typeof(GameObject), false);
+        manager.ch16Prefab = (GameObject)EditorGUILayout.ObjectField("Ch16 (Batas)", manager.ch16Prefab, typeof(GameObject), false);
+        manager.ch33Prefab = (GameObject)EditorGUILayout.ObjectField("Ch33 (Uniforme)", manager.ch33Prefab, typeof(GameObject), false);
         
-        manager.personPrefab = (GameObject)EditorGUILayout.ObjectField("Prefab NPC", manager.personPrefab, typeof(GameObject), false);
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Distribución de Tipos (%)", EditorStyles.boldLabel);
+        manager.normalChance = EditorGUILayout.Slider("Normales (Remy/Ch22)", manager.normalChance, 0f, 100f);
+        manager.labCoatChance = EditorGUILayout.Slider("Con Batas (Ch16)", manager.labCoatChance, 0f, 100f);
+        manager.uniformChance = EditorGUILayout.Slider("Con Uniforme (Ch33)", manager.uniformChance, 0f, 100f);
+        
+        float total = manager.normalChance + manager.labCoatChance + manager.uniformChance;
+        if (total > 0)
+        {
+            EditorGUILayout.HelpBox($"Distribución Real: \nNormal: {(manager.normalChance/total)*100:F1}% \nBatas: {(manager.labCoatChance/total)*100:F1}% \nUniforme: {(manager.uniformChance/total)*100:F1}%", MessageType.Info);
+        }
 
         EditorGUILayout.Space();
         

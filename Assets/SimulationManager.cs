@@ -30,8 +30,17 @@ public class BuildingData
 
 public class SimulationManager : MonoBehaviour
 {
-    public GameObject personPrefab;
+    [Header("NPC Prefabs")]
+    public GameObject remyPrefab;
+    public GameObject ch22Prefab;
+    public GameObject ch16Prefab;
+    public GameObject ch33Prefab;
     
+    [Header("NPC Type Distribution (%)")]
+    [Range(0, 100)] public float normalChance = 50f;
+    [Range(0, 100)] public float labCoatChance = 25f;
+    [Range(0, 100)] public float uniformChance = 25f;
+
     [Header("Building Configurations")]
     public List<BuildingData> buildings = new List<BuildingData>();
 
@@ -124,7 +133,7 @@ public class SimulationManager : MonoBehaviour
 
     void SpawnPerson(BuildingData building, List<GameObject> activeList)
     {
-        if (personPrefab == null || building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
+        if (building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
 
         RoomData targetRoom = building.rooms[Random.Range(0, building.rooms.Count)];
         if (targetRoom.transform == null) return;
@@ -147,6 +156,26 @@ public class SimulationManager : MonoBehaviour
 
         if (selectedSpawn.transform == null) return;
 
+        // Seleccionar Prefab según distribución
+        GameObject prefabToSpawn = remyPrefab;
+        float totalProb = normalChance + labCoatChance + uniformChance;
+        float p = Random.Range(0, totalProb);
+
+        if (p < normalChance)
+        {
+            prefabToSpawn = (Random.value < 0.5f) ? remyPrefab : ch22Prefab;
+        }
+        else if (p < normalChance + labCoatChance)
+        {
+            prefabToSpawn = ch16Prefab;
+        }
+        else
+        {
+            prefabToSpawn = ch33Prefab;
+        }
+
+        if (prefabToSpawn == null) return;
+
         Vector3 offset = new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f));
         Vector3 spawnPos = selectedSpawn.transform.position + offset;
 
@@ -156,7 +185,7 @@ public class SimulationManager : MonoBehaviour
             spawnPos = hit.position;
         }
 
-        GameObject person = Instantiate(personPrefab, spawnPos, Quaternion.identity);
+        GameObject person = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
         PersonAgent agent = person.GetComponent<PersonAgent>();
         
         if (agent != null)
