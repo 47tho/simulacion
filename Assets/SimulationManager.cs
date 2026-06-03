@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 [System.Serializable]
@@ -61,10 +62,57 @@ public class SimulationManager : MonoBehaviour
         foreach (var building in buildings)
         {
             buildingPopulations[building] = new List<GameObject>();
-            // Reset occupancy
             foreach(var room in building.rooms) room.currentOccupancy = 0;
+            
+            // Pre-calculate reachable rooms to avoid NPCs getting stuck
+            ValidateReachableRooms(building);
         }
         UpdateAllPopulations();
+    }
+
+    private Dictionary<BuildingData, List<RoomData>> reachableRoomsDict = new Dictionary<BuildingData, List<RoomData>>();
+
+    void ValidateReachableRooms(BuildingData building)
+    {
+        List<RoomData> reachable = new List<RoomData>();
+        if (building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
+
+        foreach (var room in building.rooms)
+        {
+            if (room.transform == null) continue;
+            
+            bool canReachFromAnySpawn = false;
+            foreach (var spawn in building.spawnPoints)
+            {
+                if (spawn.transform == null) continue;
+                
+                UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+                if (UnityEngine.AI.NavMesh.CalculatePath(spawn.transform.position, room.transform.position, UnityEngine.AI.NavMesh.AllAreas, path))
+                {
+                    if (path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete)
+                    {
+                        canReachFromAnySpawn = true;
+                        break;
+                    }
+                }
+            }
+
+            if (canReachFromAnySpawn)
+            {
+                reachable.Add(room);
+            }
+            else
+            {
+                Debug.LogError($"Building '{building.name}': Room '{room.name}' is UNREACHABLE from ALL spawn points and will be removed from simulation logic.");
+            }
+        }
+        
+        if (reachable.Count == 0 && building.rooms.Count > 0)
+        {
+            Debug.LogError($"Building '{building.name}' has NO reachable rooms! NPCs will never move.");
+        }
+        
+        reachableRoomsDict[building] = reachable;
     }
 
     void Update()
@@ -102,7 +150,6 @@ public class SimulationManager : MonoBehaviour
         int targetValue = building.populationData[Mathf.Clamp(blockIndex, 0, building.populationData.Count - 1)];
         int prevValue = (blockIndex > 0) ? building.populationData[Mathf.Clamp(blockIndex - 1, 0, building.populationData.Count - 1)] : 0;
 
-        // Distribuir equitativamente: Rampa lineal entre el valor previo y el objetivo del bloque
         float t = (minuteInBlock + 1) / 5.0f;
         int targetCount = Mathf.RoundToInt(Mathf.Lerp(prevValue, targetValue, t));
 
@@ -111,10 +158,7 @@ public class SimulationManager : MonoBehaviour
         if (currentCount < targetCount)
         {
             int toSpawn = targetCount - currentCount;
-            for (int i = 0; i < toSpawn; i++)
-            {
-                SpawnPerson(building, activePeople);
-            }
+            StartCoroutine(SpawnGroupOverTime(building, activePeople, toSpawn, secondsPerMinute * 0.8f));
         }
         else if (currentCount > targetCount)
         {
@@ -125,19 +169,36 @@ public class SimulationManager : MonoBehaviour
                 {
                     GameObject p = activePeople[0];
                     activePeople.RemoveAt(0);
-                    if (p != null) Destroy(p);
+                    if (p != null)
+                    {
+                        PersonAgent agent = p.GetComponent<PersonAgent>();
+                        if (agent != null) agent.ForceReturn();
+                        else Destroy(p);
+                    }
                 }
             }
         }
     }
 
-    void SpawnPerson(BuildingData building, List<GameObject> activeList)
+    IEnumerator SpawnGroupOverTime(BuildingData building, List<GameObject> activeList, int count, float duration)
     {
+        float interval = duration / Mathf.Max(1, count);
+        for (int i = 0; i < count; i++)
+        {
+            SpawnPerson(building, activeList);
+            yield return new WaitForSeconds(interval);
+        }
+    }
+
+    void SpawnPerson(BuildingData building, List<GameObject> activeList)
+{
         if (building.spawnPoints.Count == 0 || building.rooms.Count == 0) return;
 
-        RoomData targetRoom = building.rooms[Random.Range(0, building.rooms.Count)];
-        if (targetRoom.transform == null) return;
+        // Get only reachable rooms
+        List<RoomData> targetPool = reachableRoomsDict.ContainsKey(building) ? reachableRoomsDict[building] : building.rooms;
+        if (targetPool.Count == 0) return;
 
+        // 1. Select Spawn Point by Weight
         float totalWeight = 0;
         foreach (var sp in building.spawnPoints) totalWeight += sp.weight;
         float randomValue = Random.Range(0, totalWeight);
@@ -156,38 +217,43 @@ public class SimulationManager : MonoBehaviour
 
         if (selectedSpawn.transform == null) return;
 
-        // Seleccionar Prefab según distribución
+        // 2. Select Room (from reachable pool)
+        RoomData targetRoom = targetPool[Random.Range(0, targetPool.Count)];
+        
+        // 3. Select Prefab
         GameObject prefabToSpawn = remyPrefab;
         float totalProb = normalChance + labCoatChance + uniformChance;
         float p = Random.Range(0, totalProb);
-
-        if (p < normalChance)
-        {
-            prefabToSpawn = (Random.value < 0.5f) ? remyPrefab : ch22Prefab;
-        }
-        else if (p < normalChance + labCoatChance)
-        {
-            prefabToSpawn = ch16Prefab;
-        }
-        else
-        {
-            prefabToSpawn = ch33Prefab;
-        }
+        if (p < normalChance) prefabToSpawn = (Random.value < 0.5f) ? remyPrefab : ch22Prefab;
+        else if (p < normalChance + labCoatChance) prefabToSpawn = ch16Prefab;
+        else prefabToSpawn = ch33Prefab;
 
         if (prefabToSpawn == null) return;
 
-        Vector3 offset = new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f));
+        // 4. Calculate Spawn Position with enough dispersion to avoid piles
+        Vector3 offset = new Vector3(Random.Range(-5.0f, 5.0f), 0, Random.Range(-5.0f, 5.0f));
         Vector3 spawnPos = selectedSpawn.transform.position + offset;
 
         UnityEngine.AI.NavMeshHit hit;
-        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 15.0f, UnityEngine.AI.NavMesh.AllAreas))
         {
             spawnPos = hit.position;
         }
+        else
+        {
+            spawnPos = selectedSpawn.transform.position;
+        }
 
+        // 5. Instantiate and Initialize
         GameObject person = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
-        PersonAgent agent = person.GetComponent<PersonAgent>();
         
+        UnityEngine.AI.NavMeshAgent navAgent = person.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (navAgent != null)
+        {
+            navAgent.avoidancePriority = Random.Range(1, 99);
+        }
+
+        PersonAgent agent = person.GetComponent<PersonAgent>();
         if (agent != null)
         {
             agent.Initialize(targetRoom, selectedSpawn.transform, minStayTime, maxStayTime, returnToSpawnChance);
