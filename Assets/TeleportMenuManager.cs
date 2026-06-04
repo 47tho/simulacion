@@ -77,16 +77,23 @@ public class TeleportMenuManager : MonoBehaviour
 
     private void PopulateMenu()
     {
-        if (buttonContainer == null || buttonPrefab == null) return;
+        Debug.Log("[TeleportMenu] PopulateMenu called. Locations: " + locations.Count);
+        if (buttonContainer == null || buttonPrefab == null) 
+        {
+            Debug.LogError("[TeleportMenu] Missing container or prefab reference!");
+            return;
+        }
 
         // Clear existing buttons
-        foreach (Transform child in buttonContainer)
+        int childCount = buttonContainer.childCount;
+        for (int i = childCount - 1; i >= 0; i--)
         {
-            Destroy(child.gameObject);
+            Destroy(buttonContainer.GetChild(i).gameObject);
         }
 
         foreach (var location in locations)
         {
+            Debug.Log("[TeleportMenu] Instantiating button for: " + location.buildingName);
             GameObject btnObj = Instantiate(buttonPrefab, buttonContainer);
             btnObj.name = "TeleportButton_" + location.buildingName;
             
@@ -107,9 +114,11 @@ public class TeleportMenuManager : MonoBehaviour
 
     public void TeleportTo(string spawnPointName)
     {
+        Debug.Log("[TeleportMenu] Attempting to teleport to: " + spawnPointName);
         GameObject spawnPoint = GameObject.Find(spawnPointName);
         if (spawnPoint != null && player != null)
         {
+            Debug.Log("[TeleportMenu] Teleporting player to: " + spawnPoint.transform.position);
             // Disable CharacterController to teleport
             if (playerController != null) playerController.enabled = false;
             
@@ -123,7 +132,7 @@ public class TeleportMenuManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Spawn point or player not found: " + spawnPointName);
+            Debug.LogWarning("[TeleportMenu] Spawn point or player not found: " + spawnPointName + " (Player exists: " + (player != null) + ")");
         }
     }
 }
